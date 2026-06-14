@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Superstore Sales Dashboard · 2014–2017</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --navy:#0E1E33;
+    --navy-2:#16294A;
+    --paper:#F2F5FA;
+    --card:#FFFFFF;
+    --ink:#101A2B;
+    --muted:#6B7686;
+    --line:#E3E8F0;
+    --blue:#3366FF;
+    --amber:#F2A33D;
+    --teal:#1FAE8E;
+    --green:#1AA260;
+    --red:#E0524A;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    font-family:'Inter',sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    line-height:1.5;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:0 28px 80px;}
+
+  /* ---------- Header ---------- */
+  header{
+    background:linear-gradient(135deg,var(--navy) 0%, var(--navy-2) 100%);
+    color:#fff;
+    padding:48px 28px 40px;
+    position:relative;
+    overflow:hidden;
+  }
+  header::after{
+    content:"";
+    position:absolute;
+    right:-120px; top:-160px;
+    width:420px; height:420px;
+    border-radius:50%;
+    background:radial-gradient(circle at 30% 30%, rgba(51,102,255,0.35), transparent 70%);
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px; letter-spacing:.18em; text-transform:uppercase;
+    color:#9FB4E0; margin-bottom:14px;
+  }
+  header h1{
+    font-family:'Sora',sans-serif;
+    font-size:38px; font-weight:800; letter-spacing:-.01em;
+    max-width:680px;
+  }
+  header p.sub{
+    margin-top:10px; color:#B6C4E6; font-size:15px; max-width:560px;
+  }
+
+  .kpi-row{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:16px;
+    margin-top:36px;
+    position:relative; z-index:1;
+  }
+  .kpi{
+    background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.12);
+    border-radius:14px;
+    padding:18px 20px;
+    backdrop-filter:blur(2px);
+  }
+  .kpi .val{
+    font-family:'Sora',sans-serif; font-size:30px; font-weight:800;
+  }
+  .kpi .label{font-size:13px; color:#AEC0E8; margin-top:4px;}
+  .kpi .note{font-family:'IBM Plex Mono',monospace; font-size:11px; color:#7C93C4; margin-top:8px;}
+
+  /* ---------- Sections ---------- */
+  section{padding:48px 0;}
+  section.split-top{border-top:1px solid var(--line);}
+  .section-head{margin-bottom:22px;}
+  .section-head .tag{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.18em;
+    text-transform:uppercase; color:var(--blue); font-weight:600;
+  }
+  .section-head h2{
+    font-family:'Sora',sans-serif; font-size:26px; font-weight:700; margin-top:6px;
+  }
+  .section-head p{color:var(--muted); font-size:14px; margin-top:4px;}
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:24px;
+  }
+  .grid-2{display:grid; grid-template-columns:1.3fr 1fr; gap:20px;}
+  .grid-2.even{grid-template-columns:1fr 1fr;}
+  @media (max-width:860px){
+    .grid-2, .grid-2.even, .kpi-row{grid-template-columns:1fr 1fr;}
+  }
+  @media (max-width:640px){
+    .kpi-row{grid-template-columns:1fr;}
+    .grid-2{grid-template-columns:1fr;}
+  }
+
+  .card h3{font-family:'Sora',sans-serif; font-size:16px; font-weight:700; margin-bottom:4px;}
+  .card .cap{font-size:12.5px; color:var(--muted); margin-bottom:16px;}
+
+  /* ---------- Tables ---------- */
+  table{width:100%; border-collapse:collapse; font-size:13.5px;}
+  th{
+    background:var(--navy); color:#fff; text-align:left;
+    padding:10px 12px; font-weight:600; font-size:12.5px;
+    text-transform:uppercase; letter-spacing:.04em;
+  }
+  th:first-child{border-radius:8px 0 0 8px;}
+  th:last-child{border-radius:0 8px 8px 0;}
+  td{padding:10px 12px; border-bottom:1px solid var(--line);}
+  tr:last-child td{border-bottom:none;}
+  tr:nth-child(even) td{background:#F8FAFD;}
+  .num{font-family:'IBM Plex Mono',monospace; font-size:13px;}
+  .pos{color:var(--green); font-weight:600;}
+  .neg{color:var(--red); font-weight:600;}
+  .flag-loss{
+    display:inline-block; font-size:11px; font-weight:600;
+    color:var(--red); background:#FCE9E8; border-radius:6px; padding:2px 8px;
+  }
+
+  /* ---------- Margin Leaderboard (signature) ---------- */
+  .leaderboard{display:flex; flex-direction:column; gap:9px;}
+  .lb-row{display:grid; grid-template-columns:160px 1fr 60px; align-items:center; gap:12px;}
+  .lb-label{font-size:13px; font-weight:600;}
+  .lb-type{
+    display:block; font-family:'IBM Plex Mono',monospace; font-size:10.5px;
+    color:var(--muted); font-weight:500; letter-spacing:.04em; text-transform:uppercase;
+  }
+  .lb-track{
+    position:relative; height:14px; background:#EEF1F7; border-radius:7px; overflow:hidden;
+  }
+  .lb-zero{
+    position:absolute; top:0; bottom:0; width:1px; background:#C7CEDB;
+  }
+  .lb-fill{
+    position:absolute; top:0; bottom:0; border-radius:7px;
+  }
+  .lb-val{font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600; text-align:right;}
+  .lb-axis{
+    display:grid; grid-template-columns:160px 1fr 60px; gap:12px; margin-bottom:6px;
+  }
+  .lb-axis-labels{display:flex; justify-content:space-between; font-size:11px; color:var(--muted); font-family:'IBM Plex Mono',monospace;}
+
+  /* ---------- Insight cards ---------- */
+  .insights{display:grid; grid-template-columns:repeat(2,1fr); gap:16px;}
+  @media (max-width:860px){.insights{grid-template-columns:1fr;}}
+  .insight{
+    background:var(--card); border:1px solid var(--line); border-radius:16px; padding:22px;
+    border-left:5px solid var(--blue);
+  }
+  .insight.risk{border-left-color:var(--red);}
+  .insight.warn{border-left-color:var(--amber);}
+  .insight.action{border-left-color:var(--teal);}
+  .insight.growth{border-left-color:var(--green);}
+  .insight .badge{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.14em;
+    text-transform:uppercase; font-weight:600; color:var(--blue);
+  }
+  .insight.risk .badge{color:var(--red);}
+  .insight.warn .badge{color:var(--amber);}
+  .insight.action .badge{color:var(--teal);}
+  .insight.growth .badge{color:var(--green);}
+  .insight h4{font-family:'Sora',sans-serif; font-size:17px; font-weight:700; margin:6px 0 8px;}
+  .insight p{font-size:13.5px; color:#3C475A;}
+
+  footer{
+    padding:28px 28px; text-align:center; color:var(--muted); font-size:12px;
+    border-top:1px solid var(--line);
+  }
+  canvas{max-width:100%;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap" style="padding:0;">
+    <div class="eyebrow">Sales Analytics Division · Fiscal Period Jan 2014 – Dec 2017</div>
+    <h1>Superstore Sales Dashboard</h1>
+    <p class="sub">A four-year view of revenue, profit, and margin across categories, regions, sub-categories, and customer segments — with every margin ranked side by side.</p>
+
+    <div class="kpi-row">
+      <div class="kpi">
+        <div class="val">$2.30M</div>
+        <div class="label">Total Revenue</div>
+        <div class="note">4-YEAR COMBINED</div>
+      </div>
+      <div class="kpi">
+        <div class="val">$286K</div>
+        <div class="label">Net Profit</div>
+        <div class="note">12.5% MARGIN</div>
+      </div>
+      <div class="kpi">
+        <div class="val">9,994</div>
+        <div class="label">Total Orders</div>
+        <div class="note">AVG $459 / ORDER</div>
+      </div>
+      <div class="kpi">
+        <div class="val">+20.4%</div>
+        <div class="label">YoY Growth</div>
+        <div class="note">2016 → 2017</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ===== Year over Year ===== -->
+  <section>
+    <div class="section-head">
+      <div class="tag">01 · Performance Over Time</div>
+      <h2>Year-over-Year Performance</h2>
+      <p>Revenue has grown every year since 2014, with acceleration in 2016–17.</p>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Revenue &amp; Profit by Year</h3>
+        <div class="cap">Annual revenue (bars) vs. profit (line) · 2014–2017</div>
+        <canvas id="yoyChart" height="260"></canvas>
+      </div>
+      <div class="card">
+        <h3>Year-over-Year Detail</h3>
+        <div class="cap">Net margin and growth by fiscal year</div>
+        <table>
+          <thead><tr><th>Year</th><th>Revenue</th><th>Profit</th><th>Margin</th><th>YoY</th></tr></thead>
+          <tbody>
+            <tr><td>2014</td><td class="num">$484,247</td><td class="num">$49,544</td><td class="num">10.2%</td><td class="num">—</td></tr>
+            <tr><td>2015</td><td class="num">$470,532</td><td class="num">$61,618</td><td class="num">13.1%</td><td class="num neg">−2.8%</td></tr>
+            <tr><td>2016</td><td class="num">$609,206</td><td class="num">$81,795</td><td class="num">13.4%</td><td class="num pos">+29.5%</td></tr>
+            <tr><td>2017</td><td class="num">$733,215</td><td class="num">$93,439</td><td class="num">12.7%</td><td class="num pos">+20.4%</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Margin Leaderboard (signature) ===== -->
+  <section class="split-top">
+    <div class="section-head">
+      <div class="tag">02 · Cross-Cutting View</div>
+      <h2>Margin Leaderboard</h2>
+      <p>Every category, region, sub-category, and customer segment ranked on one scale — from Copiers' 37.2% to Tables' −8.6% loss.</p>
+    </div>
+    <div class="card">
+      <div class="lb-axis">
+        <div></div>
+        <div class="lb-axis-labels"><span>−10%</span><span>0%</span><span>10%</span><span>20%</span><span>30%</span><span>40%</span></div>
+        <div></div>
+      </div>
+      <div class="leaderboard" id="leaderboard"></div>
+    </div>
+  </section>
+
+  <!-- ===== Category & Region ===== -->
+  <section class="split-top">
+    <div class="section-head">
+      <div class="tag">03 · Category &amp; Regional Mix</div>
+      <h2>Where the Revenue Comes From</h2>
+      <p>Technology leads on both revenue and margin; the West and East regions drive 61% of revenue between them.</p>
+    </div>
+    <div class="grid-2 even">
+      <div class="card">
+        <h3>Revenue Share by Category</h3>
+        <div class="cap">Technology · Furniture · Office Supplies</div>
+        <canvas id="categoryChart" height="220"></canvas>
+        <table style="margin-top:18px;">
+          <thead><tr><th>Category</th><th>Revenue</th><th>Profit</th><th>Margin</th></tr></thead>
+          <tbody>
+            <tr><td>Technology</td><td class="num">$836,154</td><td class="num">$145,455</td><td class="num pos">17.4%</td></tr>
+            <tr><td>Office Supplies</td><td class="num">$719,047</td><td class="num">$122,490</td><td class="num pos">17.0%</td></tr>
+            <tr><td>Furniture</td><td class="num">$742,000</td><td class="num">$18,451</td><td class="num">2.5%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h3>Revenue by Region</h3>
+        <div class="cap">West and East dominate; Central lags on margin</div>
+        <canvas id="regionChart" height="220"></canvas>
+        <table style="margin-top:18px;">
+          <thead><tr><th>Region</th><th>Revenue</th><th>Share</th><th>Margin</th></tr></thead>
+          <tbody>
+            <tr><td>West</td><td class="num">$725,458</td><td class="num">31.6%</td><td class="num pos">14.9%</td></tr>
+            <tr><td>East</td><td class="num">$678,781</td><td class="num">29.5%</td><td class="num pos">13.5%</td></tr>
+            <tr><td>Central</td><td class="num">$501,240</td><td class="num">21.8%</td><td class="num">7.9%</td></tr>
+            <tr><td>South</td><td class="num">$391,722</td><td class="num">17.1%</td><td class="num pos">11.9%</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Sub-category P&L ===== -->
+  <section class="split-top">
+    <div class="section-head">
+      <div class="tag">04 · Product Deep Dive</div>
+      <h2>Sub-Category Profit &amp; Loss</h2>
+      <p>Tables is the only loss-making line among the top 8 sub-categories by revenue.</p>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Profit by Sub-Category</h3>
+        <div class="cap">Green = profitable · Red = loss-making</div>
+        <canvas id="subcatChart" height="260"></canvas>
+      </div>
+      <div class="card">
+        <h3>Top 5 Products by Revenue</h3>
+        <div class="cap">Highest single-product revenue contributors</div>
+        <table>
+          <thead><tr><th>Product</th><th>Revenue</th></tr></thead>
+          <tbody>
+            <tr><td>Canon imageCLASS 2200 Advanced Copier</td><td class="num">$61,600</td></tr>
+            <tr><td>Fellowes PB500 Electric Punch Comb Binding Machine</td><td class="num">$27,453</td></tr>
+            <tr><td>Cisco TelePresence System EX90 Videoconferencing Unit</td><td class="num">$22,638</td></tr>
+            <tr><td>HON 5400 Series Task Chairs for Big and Tall</td><td class="num">$21,871</td></tr>
+            <tr><td>GBC DocuBind TL300 Electric Binding System</td><td class="num">$19,823</td></tr>
+          </tbody>
+        </table>
+        <h3 style="margin-top:22px;">Sub-Category Table</h3>
+        <table>
+          <thead><tr><th>Sub-Category</th><th>Revenue</th><th>Profit</th><th>Margin</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>Copiers</td><td class="num">$149,528</td><td class="num">$55,618</td><td class="num pos">37.2%</td><td></td></tr>
+            <tr><td>Accessories</td><td class="num">$167,380</td><td class="num">$41,937</td><td class="num pos">25.1%</td><td></td></tr>
+            <tr><td>Binders</td><td class="num">$203,413</td><td class="num">$30,221</td><td class="num pos">14.9%</td><td></td></tr>
+            <tr><td>Phones</td><td class="num">$330,007</td><td class="num">$44,516</td><td class="num pos">13.5%</td><td></td></tr>
+            <tr><td>Storage</td><td class="num">$223,844</td><td class="num">$21,279</td><td class="num pos">9.5%</td><td></td></tr>
+            <tr><td>Chairs</td><td class="num">$328,449</td><td class="num">$26,590</td><td class="num pos">8.1%</td><td></td></tr>
+            <tr><td>Machines</td><td class="num">$189,239</td><td class="num">$3,385</td><td class="num">1.8%</td><td></td></tr>
+            <tr><td>Tables</td><td class="num">$206,966</td><td class="num neg">−$17,726</td><td class="num neg">−8.6%</td><td><span class="flag-loss">LOSS</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Segments ===== -->
+  <section class="split-top">
+    <div class="section-head">
+      <div class="tag">05 · Customers</div>
+      <h2>Customer Segment Performance</h2>
+      <p>Consumer drives half of all revenue; Home Office carries the highest margin.</p>
+    </div>
+    <div class="card">
+      <table>
+        <thead><tr><th>Segment</th><th>Revenue</th><th>Share</th><th>Profit</th><th>Margin</th></tr></thead>
+        <tbody>
+          <tr><td>Consumer</td><td class="num">$1,161,401</td><td class="num">50.6%</td><td class="num">$134,119</td><td class="num pos">11.5%</td></tr>
+          <tr><td>Corporate</td><td class="num">$706,146</td><td class="num">30.7%</td><td class="num">$91,979</td><td class="num pos">13.0%</td></tr>
+          <tr><td>Home Office</td><td class="num">$429,653</td><td class="num">18.7%</td><td class="num">$60,299</td><td class="num pos">14.0%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===== Strategic Insights ===== -->
+  <section class="split-top">
+    <div class="section-head">
+      <div class="tag">06 · Strategic Insights</div>
+      <h2>Recommendations</h2>
+      <p>Actionable findings drawn from the data above.</p>
+    </div>
+    <div class="insights">
+      <div class="insight">
+        <div class="badge">Opportunity</div>
+        <h4>Double Down on Technology</h4>
+        <p>Technology generates 36% of revenue at a 17.4% margin — the highest of any category. Phones ($330K) and Copiers ($150K) are both high-volume and high-margin. Skew sales resources, marketing spend, and B2B outreach toward Technology, particularly high-ticket hardware bundles aimed at Corporate and Home Office segments.</p>
+      </div>
+      <div class="insight risk">
+        <div class="badge">Critical Risk</div>
+        <h4>Fix or Exit Tables &amp; Bookcases</h4>
+        <p>Tables generated $207K in revenue yet lost $17,726 — a −8.6% margin. Bookcases similarly lost money. These products consume sales effort and warehouse cost while destroying value. Recommended: raise list prices 12–18%, remove promotional discounts on these SKUs, or discontinue low-velocity items.</p>
+      </div>
+      <div class="insight warn">
+        <div class="badge">Warning</div>
+        <h4>Repair the Central Region</h4>
+        <p>Central delivers $501K in revenue but only $39.7K in profit — a 7.9% margin versus a 12.5% national average. That 4.5-point gap represents roughly $22.5K in "missing" annual profit. A regional audit should check discounting behavior, product mix, and sales rep practices.</p>
+      </div>
+      <div class="insight action">
+        <div class="badge">Action</div>
+        <h4>Implement a Strict Discount Policy</h4>
+        <p>Discounting correlates negatively with profit (−0.22): every extra point of discount erodes margin. Furniture discounts in particular push already-thin margins into loss territory. Recommended: require approval for discounts above 15%, and eliminate discounting on any sub-category under a 10% margin.</p>
+      </div>
+      <div class="insight action">
+        <div class="badge">Action</div>
+        <h4>Capitalize on Seasonal Q4 Peaks</h4>
+        <p>November is consistently the highest-revenue month every year, with November 2017 hitting a single-month record of $118K. Plan inventory, temporary staffing, and promotions no later than September to capture the Q4 surge without margin compression from rush sourcing.</p>
+      </div>
+      <div class="insight growth">
+        <div class="badge">Growth</div>
+        <h4>Develop the South Region</h4>
+        <p>South is the smallest region at $392K revenue but holds an 11.9% margin — comparable to East. Demand quality is there; volume is underdeveloped. Targeted expansion via additional headcount or distribution could realistically add $100K–$150K in annual revenue at healthy margins.</p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  Sales Analytics Division · Prepared June 2026 · Data source: Sample Superstore Dataset (2014–2017) · 9,994 orders, 0 missing values
+</footer>
+
+<script>
+const fontStack = "'Inter', sans-serif";
+Chart.defaults.font.family = fontStack;
+Chart.defaults.color = "#6B7686";
+
+// ---------- YoY chart ----------
+new Chart(document.getElementById('yoyChart'), {
+  type: 'bar',
+  data: {
+    labels: ['2014','2015','2016','2017'],
+    datasets: [
+      {
+        label: 'Revenue',
+        data: [484247, 470532, 609206, 733215],
+        backgroundColor: '#3366FF',
+        borderRadius: 6,
+        order: 2,
+        yAxisID: 'y'
+      },
+      {
+        label: 'Profit',
+        type: 'line',
+        data: [49544, 61618, 81795, 93439],
+        borderColor: '#1AA260',
+        backgroundColor: '#1AA260',
+        tension: 0.35,
+        pointRadius: 4,
+        order: 1,
+        yAxisID: 'y1'
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    interaction: {mode:'index', intersect:false},
+    plugins: { legend: { position: 'bottom' } },
+    scales: {
+      y: { position:'left', ticks:{ callback: v => '$'+(v/1000)+'K' }, grid:{color:'#EEF1F7'} },
+      y1: { position:'right', ticks:{ callback: v => '$'+(v/1000)+'K' }, grid:{drawOnChartArea:false} }
+    }
+  }
+});
+
+// ---------- Category donut ----------
+new Chart(document.getElementById('categoryChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Technology','Office Supplies','Furniture'],
+    datasets: [{
+      data: [836154, 719047, 742000],
+      backgroundColor: ['#3366FF','#F2A33D','#1FAE8E'],
+      borderWidth: 0
+    }]
+  },
+  options: {
+    cutout: '62%',
+    plugins: { legend: { position: 'bottom' } }
+  }
+});
+
+// ---------- Region bar ----------
+new Chart(document.getElementById('regionChart'), {
+  type: 'bar',
+  data: {
+    labels: ['West','East','Central','South'],
+    datasets: [{
+      data: [725458, 678781, 501240, 391722],
+      backgroundColor: ['#3366FF','#3366FF','#9DB6F2','#9DB6F2'],
+      borderRadius: 6
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    plugins: { legend: { display:false } },
+    scales: {
+      x: { ticks:{ callback: v => '$'+(v/1000)+'K' }, grid:{color:'#EEF1F7'} },
+      y: { grid:{display:false} }
+    }
+  }
+});
+
+// ---------- Sub-category profit bar ----------
+const subcatData = [
+  {label:'Phones', val:44516},
+  {label:'Chairs', val:26590},
+  {label:'Storage', val:21279},
+  {label:'Tables', val:-17726},
+  {label:'Binders', val:30221},
+  {label:'Machines', val:3385},
+  {label:'Accessories', val:41937},
+  {label:'Copiers', val:55618},
+];
+new Chart(document.getElementById('subcatChart'), {
+  type: 'bar',
+  data: {
+    labels: subcatData.map(d=>d.label),
+    datasets: [{
+      data: subcatData.map(d=>d.val),
+      backgroundColor: subcatData.map(d => d.val < 0 ? '#E0524A' : '#1AA260'),
+      borderRadius: 6
+    }]
+  },
+  options: {
+    plugins: { legend: { display:false } },
+    scales: {
+      y: { ticks:{ callback: v => '$'+(v/1000)+'K' }, grid:{color:'#EEF1F7'} },
+      x: { grid:{display:false} }
+    }
+  }
+});
+
+// ---------- Margin leaderboard ----------
+const lbData = [
+  {label:'Copiers', type:'Sub-category', margin:37.2},
+  {label:'Accessories', type:'Sub-category', margin:25.1},
+  {label:'Technology', type:'Category', margin:17.4},
+  {label:'Office Supplies', type:'Category', margin:17.0},
+  {label:'Binders', type:'Sub-category', margin:14.9},
+  {label:'West', type:'Region', margin:14.9},
+  {label:'Home Office', type:'Segment', margin:14.0},
+  {label:'Phones', type:'Sub-category', margin:13.5},
+  {label:'East', type:'Region', margin:13.5},
+  {label:'Corporate', type:'Segment', margin:13.0},
+  {label:'South', type:'Region', margin:11.9},
+  {label:'Consumer', type:'Segment', margin:11.5},
+  {label:'Storage', type:'Sub-category', margin:9.5},
+  {label:'Chairs', type:'Sub-category', margin:8.1},
+  {label:'Central', type:'Region', margin:7.9},
+  {label:'Furniture', type:'Category', margin:2.5},
+  {label:'Machines', type:'Sub-category', margin:1.8},
+  {label:'Tables', type:'Sub-category', margin:-8.6},
+];
+
+const MIN = -10, MAX = 40, RANGE = MAX - MIN;
+const zeroPct = ((0 - MIN) / RANGE) * 100;
+
+function colorForMargin(m){
+  if (m < 0) return '#E0524A';
+  if (m < 8) return '#F2A33D';
+  if (m < 20) return '#3366FF';
+  return '#1AA260';
+}
+
+const lb = document.getElementById('leaderboard');
+lbData.forEach(d => {
+  const row = document.createElement('div');
+  row.className = 'lb-row';
+
+  const labelEl = document.createElement('div');
+  labelEl.innerHTML = `<span class="lb-label">${d.label}</span><span class="lb-type">${d.type}</span>`;
+
+  const track = document.createElement('div');
+  track.className = 'lb-track';
+
+  const zero = document.createElement('div');
+  zero.className = 'lb-zero';
+  zero.style.left = zeroPct + '%';
+  track.appendChild(zero);
+
+  const fill = document.createElement('div');
+  fill.className = 'lb-fill';
+  fill.style.background = colorForMargin(d.margin);
+  const widthPct = (Math.abs(d.margin) / RANGE) * 100;
+  if (d.margin >= 0) {
+    fill.style.left = zeroPct + '%';
+    fill.style.width = widthPct + '%';
+  } else {
+    fill.style.left = (zeroPct - widthPct) + '%';
+    fill.style.width = widthPct + '%';
+  }
+  track.appendChild(fill);
+
+  const valEl = document.createElement('div');
+  valEl.className = 'lb-val';
+  valEl.textContent = (d.margin >= 0 ? '+' : '') + d.margin.toFixed(1) + '%';
+  valEl.style.color = colorForMargin(d.margin);
+
+  row.appendChild(labelEl);
+  row.appendChild(track);
+  row.appendChild(valEl);
+  lb.appendChild(row);
+});
+</script>
+
+</body>
+</html>
